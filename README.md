@@ -8,15 +8,9 @@ Quick start
 
    npm install
 
-2. Create an environment file `.env.local` with values such as:
+2. Start the server (example):
 
-   PORT=4000
-   DATABASE_URL=mongodb://localhost:27017/truefeed
-   JWT_SECRET=your_jwt_secret
-
-3. Start the server (example):
-
-   node src/server.js
+   npm start
 
 Project structure (recommended)
 
@@ -28,7 +22,7 @@ src/
 ├── routes/        # Route definitions
 ├── middleware/    # Auth, logging, CORS, etc.
 ├── config/        # DB connection and config
-└── server.ts      # App entry point
+└── server.js      # App entry point
 ```
 
 Notes

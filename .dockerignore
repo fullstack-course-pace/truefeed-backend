@@ -1,3 +1,11 @@
+node_modules
+.npm
+.env
+.env.local
+logs
+.git
+Dockerfile
+docker-compose.yml
 node_modules/
 npm-debug.log
 .env

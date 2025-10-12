@@ -29,3 +29,10 @@ Notes
 
 - Keep controllers thin and test services independently.
 - Add tests under `src/tests/` and use a test runner like Jest for unit/integration tests.
+
+Routing notes
+
+- The primary routing entrypoint is now `src/routes/api.js` which initializes
+  and mounts versioned routes under `/api/v1/*`.
+- Legacy route files have been archived under `src/routes/archived/legacy-2025-10-12/`.
+  The original top-level route files were removed and the active routing entrypoint is `src/routes/api.js`.

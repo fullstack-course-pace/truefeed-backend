@@ -1,4 +1,5 @@
 const { connect } = require("../config/dbConnection");
+const { ObjectId } = require("mongodb");
 
 async function findByEmail(email, permission = "read") {
   const { client, db } = await connect(permission);
@@ -22,4 +23,29 @@ async function createUser(user) {
   }
 }
 
-module.exports = { findByEmail, createUser };
+async function findById(id, permission = "read") {
+  const { client, db } = await connect(permission);
+  try {
+    const users = db.collection("users");
+    const u = await users.findOne({ _id: new ObjectId(id) });
+    return u;
+  } finally {
+    await client.close();
+  }
+}
+
+async function updateUserById(id, updates) {
+  const { client, db } = await connect("write");
+  try {
+    const users = db.collection("users");
+    const result = await users.updateOne(
+      { _id: new ObjectId(id) },
+      { $set: { ...updates, updatedAt: new Date() } }
+    );
+    return result;
+  } finally {
+    await client.close();
+  }
+}
+
+module.exports = { findByEmail, createUser, findById, updateUserById };

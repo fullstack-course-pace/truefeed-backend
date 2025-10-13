@@ -20,6 +20,7 @@ app.use(morgan("combined", { stream: logger.stream }));
 
 // CORS - allow frontend to send cookies for authentication
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+// Files route will stream DB-backed uploads
 
 // If running behind a proxy/load balancer in production, trust proxy to allow secure cookies
 if (NODE_ENV === "production") {
@@ -88,6 +89,14 @@ function registerRoutes() {
   // Mount profile routes (current user)
   const v1Profile = require("./v1/profileRoutes");
   app.use("/api/v1/profile", requireAuth, v1Profile);
+
+  // Mount post routes (create/list)
+  const v1Posts = require("./v1/postRoutes");
+  app.use("/api/v1/posts", requireAuth, v1Posts);
+
+  // Public files streaming (GridFS) by id
+  const v1Files = require("./v1/filesRoutes");
+  app.use("/api/v1/files", v1Files);
 
   // Express error handler to log errors
   app.use((err, req, res, next) => {

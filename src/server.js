@@ -7,6 +7,7 @@ const {
   EDITOR_URI,
   ADMIN_URI,
 } = require("./config/envPath");
+const { ensureIndexes } = require("./config/ensureIndexes");
 
 (async function start() {
   // create the session store during startup so module import doesn't connect
@@ -25,6 +26,14 @@ const {
 
   // register routes after sessions are initialized
   registerRoutes();
+
+  // Ensure required DB indexes exist (non-blocking on errors)
+  try {
+    await ensureIndexes();
+  } catch (e) {
+    const logger = require("./utils/logger");
+    logger.warn("Index creation failed or skipped: %o", e?.message || e);
+  }
 
   app.listen(PORT, () => {
     const logger = require("./utils/logger");

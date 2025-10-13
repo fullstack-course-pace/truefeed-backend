@@ -41,39 +41,50 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     if: github.ref == 'refs/heads/main'
+    outputs:
+      image_name: ${{ steps.compute-tags.outputs.image_name }}
+      image_tag_latest: ${{ steps.compute-tags.outputs.image_tag_latest }}
+      image_tag_sha: ${{ steps.compute-tags.outputs.image_tag_sha }}
+      image_ref_latest: ${{ steps.compute-tags.outputs.image_ref_latest }}
+      image_ref_sha: ${{ steps.compute-tags.outputs.image_ref_sha }}
+      image_ref_digest: ${{ steps.compute-tags.outputs.image_ref_digest }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # - name: Create .env from secret
-      #   run: |
-      #     echo "Creating .env from BACKEND_ENV secret"
-      #     echo "${{ secrets.BACKEND_ENV }}" > .env
-      #   shell: bash
-
-      # - name: Create .env from repository secrets
-      #   env:
-      #     PORT: ${{ secrets.PORT }}
-      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      #     ADMIN_URI: ${{ secrets.ADMIN_URI }}
-      #     EDITOR_URI: ${{ secrets.EDITOR_URI }}
-      #     READER_URI: ${{ secrets.READER_URI }}
-      #     DB_NAME: ${{ secrets.DB_NAME }}
-      #     FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
-      #     NODE_ENV: ${{ secrets.NODE_ENV }}
-      #     SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-      #     JWT_SECRET: ${{ secrets.JWT_SECRET }}
-      #   run: |
-      #     echo "PORT=$PORT" > .env
-      #     echo "DATABASE_URL=$DATABASE_URL" >> .env
-      #     echo "ADMIN_URI=$ADMIN_URI" >> .env
-      #     echo "EDITOR_URI=$EDITOR_URI" >> .env
-      #     echo "READER_URI=$READER_URI" >> .env
-      #     echo "DB_NAME=$DB_NAME" >> .env
-      #     echo "FRONTEND_ORIGIN=$FRONTEND_ORIGIN" >> .env
-      #     echo "NODE_ENV=$NODE_ENV" >> .env
-      #     echo "SESSION_SECRET=$SESSION_SECRET" >> .env
-      #     echo "JWT_SECRET=$JWT_SECRET" >> .env
+      - name: Create backend .env from repository secrets
+        working-directory: backend
+        shell: bash
+        env:
+          PORT: ${{ secrets.PORT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_URI: ${{ secrets.ADMIN_URI }}
+          EDITOR_URI: ${{ secrets.EDITOR_URI }}
+          READER_URI: ${{ secrets.READER_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          USER_COLLECTION: ${{ secrets.USER_COLLECTION }}
+          POST_COLLECTION: ${{ secrets.POST_COLLECTION }}
+          COMMENT_COLLECTION: ${{ secrets.COMMENT_COLLECTION }}
+        run: |
+          {
+            echo "PORT=${PORT:-4000}";
+            echo "DATABASE_URL=${DATABASE_URL}";
+            echo "ADMIN_URI=${ADMIN_URI}";
+            echo "EDITOR_URI=${EDITOR_URI}";
+            echo "READER_URI=${READER_URI}";
+            echo "DB_NAME=${DB_NAME:-truefeed}";
+            echo "USER_COLLECTION=${USER_COLLECTION:-users}";
+            echo "POST_COLLECTION=${POST_COLLECTION:-posts}";
+            echo "COMMENT_COLLECTION=${COMMENT_COLLECTION:-comments}";
+            echo "FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}";
+            echo "NODE_ENV=${NODE_ENV:-production}";
+            echo "SESSION_SECRET=${SESSION_SECRET}";
+            echo "JWT_SECRET=${JWT_SECRET}";
+          } > .env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -86,11 +97,36 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker image to ghcr.io
+        id: build
         uses: docker/build-push-action@v4
         with:
-          context: .
-          file: ./Dockerfile
+          context: ./backend
+          file: ./backend/Dockerfile
           push: true
           tags: |
             ghcr.io/${{ github.repository }}:latest
             ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Compute image outputs
+        id: compute-tags
+        shell: bash
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository }}"
+          TAG_LATEST="latest"
+          TAG_SHA="${{ github.sha }}"
+          REF_LATEST="${IMAGE_NAME}:${TAG_LATEST}"
+          REF_SHA="${IMAGE_NAME}:${TAG_SHA}"
+          # docker/build-push-action exposes a content-addressable digest
+          DIGEST="${{ steps.build.outputs.digest }}"
+          if [ -n "$DIGEST" ]; then
+            REF_DIGEST="${IMAGE_NAME}@${DIGEST}"
+          else
+            REF_DIGEST=""
+          fi
+
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "image_tag_latest=$TAG_LATEST" >> "$GITHUB_OUTPUT"
+          echo "image_tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
+          echo "image_ref_latest=$REF_LATEST" >> "$GITHUB_OUTPUT"
+          echo "image_ref_sha=$REF_SHA" >> "$GITHUB_OUTPUT"
+          echo "image_ref_digest=$REF_DIGEST" >> "$GITHUB_OUTPUT"

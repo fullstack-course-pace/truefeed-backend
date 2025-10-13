@@ -45,11 +45,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create .env from secret
-        run: |
-          echo "Creating .env from BACKEND_ENV secret"
-          echo "${{ secrets.BACKEND_ENV }}" > .env
-        shell: bash
+      # - name: Create .env from secret
+      #   run: |
+      #     echo "Creating .env from BACKEND_ENV secret"
+      #     echo "${{ secrets.BACKEND_ENV }}" > .env
+      #   shell: bash
 
       # - name: Create .env from repository secrets
       #   env:

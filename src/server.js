@@ -1,13 +1,16 @@
 require("dotenv").config();
 const { app, initSessions, registerRoutes } = require("./routes/api");
 const MongoStore = require("connect-mongo");
-
-const PORT = process.env.PORT || 5000;
+const {
+  PORT,
+  DATABASE_URL,
+  EDITOR_URI,
+  ADMIN_URI,
+} = require("./config/envPath");
 
 (async function start() {
   // create the session store during startup so module import doesn't connect
-  const mongoUrl =
-    process.env.DATABASE_URL || process.env.EDITOR_URI || process.env.ADMIN_URI;
+  const mongoUrl = DATABASE_URL || EDITOR_URI || ADMIN_URI;
   let store;
   if (mongoUrl) {
     store = MongoStore.create({ mongoUrl, collectionName: "sessions" });

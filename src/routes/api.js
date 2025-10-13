@@ -7,6 +7,11 @@ const session = require("express-session");
 const morgan = require("morgan");
 const cors = require("cors");
 const logger = require("../utils/logger");
+const {
+  FRONTEND_ORIGIN,
+  SESSION_SECRET,
+  NODE_ENV,
+} = require("../config/envPath");
 
 app.use(express.json());
 
@@ -14,11 +19,10 @@ app.use(express.json());
 app.use(morgan("combined", { stream: logger.stream }));
 
 // CORS - allow frontend to send cookies for authentication
-const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
 
 // If running behind a proxy/load balancer in production, trust proxy to allow secure cookies
-if (process.env.NODE_ENV === "production") {
+if (NODE_ENV === "production") {
   app.set("trust proxy", 1);
 }
 
@@ -31,8 +35,7 @@ app.use((req, res, next) => {
 // Session configuration is deferred to server startup to avoid creating DB
 // connections during module import. Call `initSessions(sessionStore)` from
 // the server entrypoint (server.js) before listening.
-const sessionSecret =
-  process.env.SESSION_SECRET || process.env.JWT_SECRET || "dev_session_secret";
+const sessionSecret = SESSION_SECRET;
 
 function initSessions(store) {
   if (!store) {
@@ -48,8 +51,8 @@ function initSessions(store) {
       store,
       cookie: {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: process.env.NODE_ENV === "production" ? "none" : "lax",
+        secure: NODE_ENV === "production",
+        sameSite: NODE_ENV === "production" ? "none" : "lax",
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       },
     })

@@ -45,29 +45,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create .env from repository secrets
-        env:
-          PORT: ${{ secrets.PORT }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          ADMIN_URI: ${{ secrets.ADMIN_URI }}
-          EDITOR_URI: ${{ secrets.EDITOR_URI }}
-          READER_URI: ${{ secrets.READER_URI }}
-          DB_NAME: ${{ secrets.DB_NAME }}
-          FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
-          NODE_ENV: ${{ secrets.NODE_ENV }}
-          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      - name: Create .env from secret (optional)
+        if: ${{ secrets.BACKEND_ENV }} != ''
         run: |
-          echo "PORT=$PORT" > .env
-          echo "DATABASE_URL=$DATABASE_URL" >> .env
-          echo "ADMIN_URI=$ADMIN_URI" >> .env
-          echo "EDITOR_URI=$EDITOR_URI" >> .env
-          echo "READER_URI=$READER_URI" >> .env
-          echo "DB_NAME=$DB_NAME" >> .env
-          echo "FRONTEND_ORIGIN=$FRONTEND_ORIGIN" >> .env
-          echo "NODE_ENV=$NODE_ENV" >> .env
-          echo "SESSION_SECRET=$SESSION_SECRET" >> .env
-          echo "JWT_SECRET=$JWT_SECRET" >> .env
+          echo "Creating .env from BACKEND_ENV secret"
+          echo "${{ secrets.BACKEND_ENV }}" > .env
+        shell: bash
+
+      # - name: Create .env from repository secrets
+      #   env:
+      #     PORT: ${{ secrets.PORT }}
+      #     DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      #     ADMIN_URI: ${{ secrets.ADMIN_URI }}
+      #     EDITOR_URI: ${{ secrets.EDITOR_URI }}
+      #     READER_URI: ${{ secrets.READER_URI }}
+      #     DB_NAME: ${{ secrets.DB_NAME }}
+      #     FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+      #     NODE_ENV: ${{ secrets.NODE_ENV }}
+      #     SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+      #     JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      #   run: |
+      #     echo "PORT=$PORT" > .env
+      #     echo "DATABASE_URL=$DATABASE_URL" >> .env
+      #     echo "ADMIN_URI=$ADMIN_URI" >> .env
+      #     echo "EDITOR_URI=$EDITOR_URI" >> .env
+      #     echo "READER_URI=$READER_URI" >> .env
+      #     echo "DB_NAME=$DB_NAME" >> .env
+      #     echo "FRONTEND_ORIGIN=$FRONTEND_ORIGIN" >> .env
+      #     echo "NODE_ENV=$NODE_ENV" >> .env
+      #     echo "SESSION_SECRET=$SESSION_SECRET" >> .env
+      #     echo "JWT_SECRET=$JWT_SECRET" >> .env
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

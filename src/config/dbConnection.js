@@ -26,6 +26,7 @@ async function connect(permission = "write") {
   try {
     await c.connect();
     const dbName = process.env.DB_NAME || "truefeed";
+
     const db = c.db(dbName);
     return { client: c, db };
   } catch (err) {

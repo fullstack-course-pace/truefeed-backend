@@ -10,7 +10,7 @@ const {
 
 (async function start() {
   // create the session store during startup so module import doesn't connect
-  const mongoUrl = DATABASE_URL || EDITOR_URI || ADMIN_URI;
+  const mongoUrl = EDITOR_URI || ADMIN_URI;
   let store;
   if (mongoUrl) {
     store = MongoStore.create({ mongoUrl, collectionName: "sessions" });

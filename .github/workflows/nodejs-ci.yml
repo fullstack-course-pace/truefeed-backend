@@ -45,7 +45,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Create .env from secret (optional)
+      - name: Create .env from secret
         if: ${{ github.secrets.BACKEND_ENV != '' }}
         run: |
           echo "Creating .env from BACKEND_ENV secret"

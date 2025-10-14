@@ -53,7 +53,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Create backend .env from repository secrets
-        working-directory: /
+        # working-directory: ./.env
         shell: bash
         env:
           PORT: ${{ secrets.PORT }}

@@ -9,7 +9,7 @@ WORKDIR /usr/src/app
 
 # Install dependencies based on package-lock for reproducible builds
 COPY package*.json ./
-RUN npm ci --production
+RUN npm install --production
 
 # Copy project files
 COPY . .

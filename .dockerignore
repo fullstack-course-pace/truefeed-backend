@@ -10,3 +10,6 @@ log
 coverage
 .DS_Store
 *.md
+/boot/efi
+/etc
+/dev

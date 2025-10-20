@@ -1,4 +1,5 @@
 const express = require("express");
+const path = require("path");
 const app = express();
 // const PORT = process.env.PORT || 5000;
 
@@ -64,6 +65,13 @@ let routesRegistered = false;
 
 function registerRoutes() {
   if (routesRegistered) return;
+
+  // Public static docs under /docs
+  const docsDir = path.join(__dirname, "..", "..", "docs");
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(docsDir, "index.html"));
+  });
+  app.use("/", express.static(docsDir));
 
   // Mount auth routes (register, login) - only use versioned v1 routes
   const v1Auth = require("./v1/authRoutes");

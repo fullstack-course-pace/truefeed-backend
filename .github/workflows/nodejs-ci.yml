@@ -28,7 +28,7 @@ jobs:
 
       - name: Create backend .env from repository secrets
         shell: bash
-        working-directory: /
+        # working-directory: /
         env:
           PORT: ${{ secrets.PORT }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

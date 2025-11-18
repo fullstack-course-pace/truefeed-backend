@@ -10,5 +10,3 @@ services:
     restart: on-failure
     env_file:
       - ./.env
-    ports:
-      - "4000:4000"

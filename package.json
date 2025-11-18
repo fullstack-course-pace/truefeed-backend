@@ -20,6 +20,7 @@
     "test": "echo \"No tests\" && exit 0"
   },
   "dependencies": {
+    "@google/genai": "^1.29.1",
     "bcryptjs": "^2.4.3",
     "connect-mongo": "^4.6.0",
     "cors": "^2.8.5",

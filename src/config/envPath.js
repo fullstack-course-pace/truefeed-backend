@@ -11,6 +11,9 @@ const FRONTEND_ORIGIN = process.env.FRONTEND_ORIGIN || "http://localhost:3000";
 const SESSION_SECRET =
   process.env.SESSION_SECRET || process.env.JWT_SECRET || "dev_session_secret";
 const NODE_ENV = process.env.NODE_ENV;
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const GEMINI_PROJECT_NUMBER = process.env.GEMINI_PROJECT_NUMBER;
+const GEMINI_PROJECT_NAME = process.env.GEMINI_PROJECT_NAME;
 
 module.exports = {
   PORT,
@@ -25,4 +28,7 @@ module.exports = {
   FRONTEND_ORIGIN,
   SESSION_SECRET,
   NODE_ENV,
+  GEMINI_API_KEY,
+  GEMINI_PROJECT_NUMBER,
+  GEMINI_PROJECT_NAME,
 };

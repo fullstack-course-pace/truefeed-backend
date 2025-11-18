@@ -68,10 +68,52 @@ function registerRoutes() {
 
   // Public static docs under /docs
   const docsDir = path.join(__dirname, "..", "..", "docs");
-  app.get("/", (req, res) => {
+  // Basic security headers for docs pages/assets
+  function setDocsSecurityHeaders(req, res, next) {
+    res.setHeader(
+      "Content-Security-Policy",
+      [
+        "default-src 'self'",
+        "script-src 'self' https://cdn.jsdelivr.net",
+        "style-src 'self'",
+        "img-src 'self' data:",
+        "connect-src 'self'",
+        "object-src 'none'",
+        "base-uri 'self'",
+        "frame-ancestors 'none'",
+      ].join("; ")
+    );
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Referrer-Policy", "no-referrer");
+    next();
+  }
+  app.get("/", setDocsSecurityHeaders, (req, res) => {
     res.sendFile(path.join(docsDir, "index.html"));
   });
-  app.use("/", express.static(docsDir));
+  app.use("/", setDocsSecurityHeaders, express.static(docsDir));
+
+  // Dynamic Markdown fetch endpoint (whitelisted files in backend root)
+  const repoRoot = path.join(__dirname, "..", "..");
+  const mdWhitelist = new Set(["README.md", "ENDPOINTS.md", "ARCHITECTURE.md"]);
+  app.get("/md/:name", (req, res) => {
+    const name = req.params?.name || "";
+    if (!mdWhitelist.has(name)) {
+      logger.warn("Docs MD request for disallowed file: %s", name);
+      return res.status(404).json({ error: "not found" });
+    }
+    const filePath = path.join(repoRoot, name);
+    res.setHeader("Content-Type", "text/markdown; charset=utf-8");
+    res.sendFile(filePath, (err) => {
+      if (err) {
+        logger.error("Error sending MD file %s: %o", filePath, err);
+        if (!res.headersSent) {
+          return res
+            .status(err?.code === "ENOENT" ? 404 : 500)
+            .json({ error: "failed to load markdown" });
+        }
+      }
+    });
+  });
 
   // Mount auth routes (register, login) - only use versioned v1 routes
   const v1Auth = require("./v1/authRoutes");

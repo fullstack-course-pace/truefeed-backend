@@ -5,107 +5,24 @@
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>TrueFeed — Backend Documentation</title>
     <link rel="icon" href="data:," />
-    <style>
-      :root {
-        --bg: #0f1724;
-        --card: #0b1220;
-        --muted: #94a3b8;
-        --accent: #7c3aed;
-        --surface: #0b1220;
-      }
-      html,
-      body {
-        height: 100%;
-        margin: 0;
-        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
-          "Helvetica Neue", Arial;
-        color: #e6eef8;
-        background: linear-gradient(180deg, #071026 0%, #031025 100%);
-      }
-      .wrap {
-        max-width: 1100px;
-        margin: 36px auto;
-        padding: 28px;
-      }
-      header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 16px;
-      }
-      h1 {
-        margin: 0;
-        font-size: 20px;
-      }
-      nav a {
-        color: var(--accent);
-        text-decoration: none;
-        margin-left: 12px;
-        font-size: 14px;
-      }
-      .hero {
-        margin-top: 18px;
-        margin-bottom: 20px;
-        color: var(--muted);
-        font-size: 14px;
-      }
-      .card {
-        background: rgba(255, 255, 255, 0.02);
-        border: 1px solid rgba(255, 255, 255, 0.03);
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 6px 18px rgba(2, 6, 23, 0.6);
-      }
-      .section {
-        margin-top: 20px;
-      }
-      .md {
-        line-height: 1.6;
-        color: #dbeafe;
-      }
-      .md h2 {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-        padding-bottom: 8px;
-      }
-      pre {
-        background: #071024;
-        padding: 12px;
-        border-radius: 8px;
-        overflow: auto;
-      }
-      code {
-        background: rgba(255, 255, 255, 0.02);
-        padding: 2px 6px;
-        border-radius: 6px;
-      }
-      a.link {
-        color: var(--accent);
-      }
-      footer {
-        margin-top: 28px;
-        color: var(--muted);
-        font-size: 13px;
-      }
-      @media (max-width: 720px) {
-        .wrap {
-          padding: 16px;
-        }
-      }
-    </style>
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
     <main class="wrap">
-      <header>
-        <div>
-          <h1>TrueFeed — Backend Documentation</h1>
-          <div class="hero">
-            A simple static doc page generated inside the
-            <code>backend/docs</code> folder.
+      <header class="site-header">
+        <div class="brand">
+          <div class="logo">TF</div>
+          <div class="titles">
+            <h1>TrueFeed — Backend Docs</h1>
+            <p class="hero">
+              Up-to-date docs rendered from Markdown in your repo.
+            </p>
           </div>
         </div>
-        <nav>
-          <a href="#readme">Overview</a>
-          <a href="#endpoints">API Endpoints</a>
+        <nav class="tabs">
+          <a href="#readme" class="tab">Overview</a>
+          <a href="#endpoints" class="tab">API Endpoints</a>
+          <a href="#architecture" class="tab">Architecture</a>
         </nav>
       </header>
 
@@ -117,288 +34,23 @@
         <div id="endpoints-html" class="md">Loading API reference…</div>
       </section>
 
+      <section id="architecture" class="section card">
+        <div id="architecture-html" class="md">Loading Architecture…</div>
+      </section>
+
       <footer>
-        Built from the files in the backend folder. To update the content, edit
-        <code>backend/README.md</code> or <code>backend/ENDPOINTS.md</code> and
-        refresh this page.
+        Built from files in the backend folder. To update the content, edit
+        <code>backend/README.md</code>, <code>backend/ENDPOINTS.md</code>, or
+        <code>backend/ARCHITECTURE.md</code> and refresh this page.
       </footer>
+
+      <button id="backToTop" class="back-to-top" aria-label="Back to top">
+        ↑
+      </button>
     </main>
 
-    <!-- Embedded markdown sources so this page works without fetching files -->
-    <script id="md-readme" type="text/plain">
-      # TrueFeed Backend
-
-      Node.js / Express API server for TrueFeed. The backend follows a Layered Architecture (controllers, services, models) to keep business logic testable and decoupled from HTTP concerns.
-
-      Quick start
-
-      1. Install dependencies:
-
-         npm install
-
-      2. Start the server (example):
-
-         npm start
-
-      Project structure (recommended)
-
-      ```
-      src/
-      ├── controllers/   # HTTP handlers (call services)
-      ├── services/      # Business logic
-      ├── models/        # Database schema/ORM models
-      ├── routes/        # Route definitions
-      ├── middleware/    # Auth, logging, CORS, etc.
-      ├── config/        # DB connection and config
-      └── server.js      # App entry point
-      ```
-
-      Notes
-
-      - Keep controllers thin and test services independently.
-      - Add tests under `src/tests/` and use a test runner like Jest for unit/integration tests.
-
-      Routing notes
-
-      - The primary routing entrypoint is now `src/routes/api.js` which initializes
-        and mounts versioned routes under `/api/v1/*`.
-      - Legacy route files have been archived under `src/routes/archived/legacy-2025-10-12/`.
-        The original top-level route files were removed and the active routing entrypoint is `src/routes/api.js`.
-
-      ## API Endpoints
-
-      For the full, always up-to-date API reference (including auth, profile, posts, and logs), see:
-
-      - ENDPOINTS.md
-    </script>
-
-    <script id="md-endpoints" type="text/plain">
-      # TrueFeed Backend API Endpoints
-
-      This document describes the versioned REST API exposed by the TrueFeed backend. All active endpoints are mounted under `/api/v1/*`.
-
-      Notes
-
-      - Authentication uses server-side sessions with cookies (`connect.sid`). Your client must send cookies: e.g., `fetch(url, { credentials: 'include' })`.
-      - In production, cookies are `SameSite=None; Secure`, so use HTTPS.
-      - Admin-only endpoints require the session role to be `admin`.
-
-      ## Auth (public)
-
-      ### POST /api/v1/auth/register
-
-      Register a new user and start a session.
-
-      - Body (application/json):
-        - `name?`: string
-        - `email`: string (required)
-        - `password`: string (required)
-      - Responses:
-        - 201: JSON user object (created). Session cookie is set.
-        - 400: `{ error: "email and password are required" }`
-        - 409: `{ error: "User already exists" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ### POST /api/v1/auth/login
-
-      Authenticate and establish a session.
-
-      - Body (application/json):
-        - `email`: string (required)
-        - `password`: string (required)
-      - Responses:
-        - 200: `{ message: "Logged in" }` and session cookie is set.
-        - 400: `{ error: "email and password are required" }`
-        - 401: `{ error: "Invalid credentials" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ### POST /api/v1/auth/logout
-
-      Destroy the current session and clear the session cookie.
-
-      - Responses:
-        - 200: `{ message: "Logged out" }`
-        - 500: `{ error: "Could not log out" }`
-
-      ## Profile (authenticated)
-
-      ### GET /api/v1/profile
-
-      Return the current authenticated user's profile.
-
-      - Auth: requires a valid session
-      - Responses:
-        - 200: `{ user: { /* user object without password */ } }`
-        - 401: `{ error: "Not authenticated" }`
-        - 404: `{ error: "User not found" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ### POST /api/v1/profile/update
-
-      Update the current user's profile fields.
-
-      - Auth: requires a valid session
-      - Body (application/json): any subset of
-        - `picture?`: string (URL or other your client uses)
-        - `description?`: string
-        - `phone?`: string
-      - Responses:
-        - 200: `{ message: "Profile updated" }`
-        - 401: `{ error: "Not authenticated" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ### POST /api/v1/profile/upload-picture
-
-      Upload a new profile picture and receive a URL you can then store via `/profile/update`.
-
-      - Auth: requires a valid session
-      - Request: `multipart/form-data` with field `picture` (image/png, image/jpeg, image/webp, gif)
-      - Responses:
-        - 201: `{ url: "/api/v1/files/<fileId>" }`
-        - 400: `{ error: "No file uploaded" }`
-        - 401: `{ error: "Not authenticated" }`
-        - 415: `{ error: "Unsupported media type" }` (if filtered by server)
-        - 500 on failures
-
-      ### POST /api/v1/profile/update-with-picture
-
-      One-step profile update that accepts an image and text fields in a single request.
-
-      - Auth: requires a valid session
-      - Request: `multipart/form-data`
-        - File field: `picture` (optional) — image/png, image/jpeg, image/webp, gif
-        - Text fields: `description?` (string, up to 1000), `phone?` (string, up to 30)
-      - Responses:
-        - 200: `{ message: "Profile updated", picture?: "/api/v1/files/<fileId>" }`
-        - 400: `{ error: "No file uploaded" }` (only when sending an empty file field)
-        - 401: `{ error: "Not authenticated" }`
-        - 500 on failures
-
-      ## Posts (authenticated)
-
-      ### POST /api/v1/posts
-
-      Create a new post for the current user.
-
-      - Auth: requires a valid session
-      - Body (application/json):
-        - `content?`: string
-        - `mediaUrl?`: string (image/video URL)
-      - Responses:
-        - 201: `{ id: "<insertedId>" }`
-        - 401: `{ error: "Not authenticated" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ### POST /api/v1/posts/upload-media
-
-      Upload a media file for a post and receive a URL to use as `mediaUrl` when creating a post.
-
-      - Auth: requires a valid session
-      - Request: `multipart/form-data` with field `media` (image/png, image/jpeg, image/webp, gif, or video/mp4/webm/ogg)
-      - Responses:
-        - 201: `{ url: "/api/v1/files/<fileId>" }`
-        - 400: `{ error: "No file uploaded" }`
-        - 401: `{ error: "Not authenticated" }`
-        - 415: `{ error: "Unsupported media type" }` (if filtered by server)
-        - 500 on failures
-
-      ### POST /api/v1/posts/create-with-media
-
-      Create a new post and (optionally) upload media in the same request.
-
-      - Auth: requires a valid session
-      - Request: `multipart/form-data`
-        - File field: `media` (optional) — image/png, image/jpeg, image/webp, gif, or video/mp4/webm/ogg
-        - Text field: `content?` (string, up to 2000)
-      - Responses:
-        - 201: `{ id: "<insertedId>", mediaUrl?: "/api/v1/files/<fileId>" }`
-        - 401: `{ error: "Not authenticated" }`
-        - 500: `{ error: "upload or create failed" }`
-
-      ### GET /api/v1/posts/mine
-
-      List posts created by the current user (newest first).
-
-      - Auth: requires a valid session
-      - Responses:
-        - 200: `{ posts: [ { _id, userId, content, mediaUrl, createdAt, updatedAt } ] }`
-        - 401: `{ error: "Not authenticated" }`
-        - 500: `{ error: "Internal server error" }`
-
-      ## Logs (admin-only)
-
-      All routes under `/api/v1/logs` are guarded by admin middleware. Non-admins receive 401/403.
-
-      ### GET /api/v1/logs
-
-      List available log files.
-
-      - Responses:
-        - 200: `{ logs: [ "YYYY-MM-DD.log", ... ] }`
-
-      ### GET /api/v1/logs/:date
-
-      Download a specific log file.
-
-      - Params: `date` (string, required) — format: `YYYY-MM-DD`
-      - Responses:
-        - 200: file download attachment named `:date.log`
-        - 400: `{ error: "date must be in YYYY-MM-DD format" }`
-        - 404: `{ error: "log not found" }`
-
-      ### GET /api/v1/logs/:date/stream?follow=1
-
-      Stream log contents; with `follow=1` keeps the connection open and streams appended lines in realtime.
-
-      - Query: `follow` (optional) — values: `1`/`true`
-      - Responses:
-        - 200: `text/plain` stream of log contents
-        - 400/404/500 on errors
-
-      ---
-
-      ## Files (public)
-
-      ### GET /api/v1/files/:id
-
-      Stream a file stored in MongoDB GridFS by its ObjectId.
-
-      - Params: `id` (string) — the GridFS file ObjectId
-      - Responses:
-        - 200: file bytes streamed with appropriate `Content-Type` and long-term cache headers
-        - 400: `{ error: "invalid id" }`
-        - 404 on missing file
-        - 500 on stream errors
-
-      Notes
-
-      - URLs returned from upload endpoints point to this route (e.g., `/api/v1/files/<fileId>`).
-
-      Future work
-
-      - Payload validation and basic sanitization are in place for profile updates and post creation. For stricter contracts, migrate to a schema library (Joi/Zod) and add OpenAPI.
-      - Media uploads are stored in MongoDB GridFS and streamed back via `/api/v1/files/:id`. For production at scale, consider object storage and CDNs.
-      - OpenAPI/Swagger spec and Postman collection.
-    </script>
-
-    <!-- marked.js for Markdown -> HTML (client-side, embedded) -->
+    <!-- marked.js for Markdown -> HTML (client-side) -->
     <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script>
-      (function () {
-        const readme = document.getElementById("md-readme").textContent.trim();
-        const endpoints = document
-          .getElementById("md-endpoints")
-          .textContent.trim();
-        try {
-          document.getElementById("readme-html").innerHTML =
-            marked.parse(readme);
-          document.getElementById("endpoints-html").innerHTML =
-            marked.parse(endpoints);
-        } catch (e) {
-          document.getElementById("readme-html").textContent =
-            "Failed to render docs: " + e.message;
-        }
-      })();
-    </script>
+    <script src="app.js"></script>
   </body>
 </html>

@@ -215,36 +215,90 @@ Future work
 - Media uploads are stored in MongoDB GridFS and streamed back via `/api/v1/files/:id`. For production at scale, consider object storage and CDNs.
 - OpenAPI/Swagger spec and Postman collection.
 
-## AI (public)
 
-These endpoints integrate with Google Gemini via the backend `geminiService`. Currently, they are public and do not require authentication. If you need to restrict access, mount them behind session auth.
+Friends (authenticated)
 
-### GET /api/v1/gemini/generate
+All routes under /api/v1/friends require a valid authenticated session.
+These endpoints support social connections, friend requests, and user discovery.
 
-Generate sample AI content using the configured Gemini model.
+POST /api/v1/friends/request
 
-- Query/body: none (current implementation ignores request payload)
-- Responses:
-  - 200: `{ response: <model_output_string_or_object> }`
-  - 500: `{ error: "Failed to generate AI content" }`
+Send a friend request to another user.
 
-Notes
-
-- Output format depends on the service implementation. Right now it returns whatever `geminiService.generate()` yields.
-
-### POST /api/v1/gemini/check
-
-Check credibility of provided text using Gemini and return an explanation with a score.
-
+- Auth: requires a valid session
 - Body (application/json):
-  - `checkFor`: string — the text to evaluate
-- Behavior:
-  - The server appends an instruction asking Gemini to answer yes/no, explain why, and provide a credibility score out of 10.
+    - targetUserId: string (required) — MongoDB ObjectId of the target user
 - Responses:
-  - 200: `{ response: <model_output_string_or_object> }`
-  - 500: `{ error: "Failed to check AI credibility" }`
+    - 201: { message: "Friend request sent" }
+    - 400: { error: "invalid targetUserId" }
+    - 400: { error: "cannot send request to yourself" }
+    - 404: { error: "user not found" }
+    - 409: { error: "request already sent" }
+    - 409: { error: "already friends" }
+    - 401: { error: "Not authenticated" }
+    - 500: { error: "Internal server error" }
+Notes
+  - Duplicate friend requests are prevented.
+  - Requests cannot be sent to users who are already friends.
 
-Security & configuration
+POST /api/v1/friends/accept
+Accept an incoming friend request.
+  - Auth: requires a valid session (receiver must be logged in)
+  - Body (application/json):
+      - senderUserId: string (required) — MongoDB ObjectId of the user who sent the request
+  - Responses:
+      - 200: { message: "Friend request accepted" }
+      - 400: { error: "invalid senderUserId" }
+      - 400: { error: "cannot accept yourself" }
+      - 404: { error: "sender not found" }
+      - 409: { error: "no pending request to accept" }
+      - 409: { error: "already friends" }
+      - 401: { error: "Not authenticated" }
+      - 500: { error: "Internal server error" }
+  - Notes:
+      - Accepting a request creates a mutual friendship.
+      - Pending request entries are removed from both users.
 
-- Requires valid Gemini API configuration in environment for `geminiService`.
-- Consider adding rate limiting and auth if exposed publicly.
+GET /api/v1/friends/search
+  - Search for users by name or email and return relationship status.
+Auth: requires a valid session
+Query parameters:
+    - q: string (required) — search text (minimum 2 characters)
+    - limit: number (optional) — max results (default: 10, max: 20)
+Responses:
+200:
+{
+  "results": [
+    {
+      "_id": "string",
+      "name": "string",
+      "email": "string",
+      "picture": "string | null",
+      "description": "string",
+      "isFriend": false,
+      "incomingPending": false,
+      "outgoingPending": true
+    }
+  ]
+}
+
+- 400: { error: "q must be at least 2 characters" }
+- 401: { error: "Not authenticated" }
+- 500: { error: "Internal server error" }
+
+Relationship flags:
+- isFriend: user is already a friend
+- incomingPending: user has sent a friend request to you
+- outgoingPending: you have sent a friend request to the user
+
+Notes:
+- The authenticated user is excluded from search results.
+- Passwords and sensitive fields are never returned.
+- Data Model Notes (Users Collection)
+
+The following fields are used internally to support social features:
+- friends: array of user ObjectIds
+- friendRequestsIncoming: array of user ObjectIds
+- friendRequestsOutgoing: array of user ObjectIds
+
+These fields are managed exclusively by the friends API endpoints.

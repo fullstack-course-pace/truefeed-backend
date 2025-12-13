@@ -148,6 +148,10 @@ function registerRoutes() {
   const v1Files = require("./v1/filesRoutes");
   app.use("/api/v1/files", v1Files);
 
+    // Mount friends routes
+  const v1Friends = require("./v1/friendsRoutes");
+  app.use("/api/v1/friends", requireAuth, v1Friends);
+
   // Express error handler to log errors
   app.use((err, req, res, next) => {
     logger.error("Unhandled error: %o", err);

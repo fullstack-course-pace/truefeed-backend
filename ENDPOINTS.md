@@ -204,3 +204,91 @@ Future work
 - Payload validation and basic sanitization are in place for profile updates and post creation. For stricter contracts, migrate to a schema library (Joi/Zod) and add OpenAPI.
 - Media uploads are stored in MongoDB GridFS and streamed back via `/api/v1/files/:id`. For production at scale, consider object storage and CDNs.
 - OpenAPI/Swagger spec and Postman collection.
+
+
+Friends (authenticated)
+
+All routes under /api/v1/friends require a valid authenticated session.
+These endpoints support social connections, friend requests, and user discovery.
+
+POST /api/v1/friends/request
+
+Send a friend request to another user.
+
+- Auth: requires a valid session
+- Body (application/json):
+    - targetUserId: string (required) — MongoDB ObjectId of the target user
+- Responses:
+    - 201: { message: "Friend request sent" }
+    - 400: { error: "invalid targetUserId" }
+    - 400: { error: "cannot send request to yourself" }
+    - 404: { error: "user not found" }
+    - 409: { error: "request already sent" }
+    - 409: { error: "already friends" }
+    - 401: { error: "Not authenticated" }
+    - 500: { error: "Internal server error" }
+Notes
+  - Duplicate friend requests are prevented.
+  - Requests cannot be sent to users who are already friends.
+
+POST /api/v1/friends/accept
+Accept an incoming friend request.
+  - Auth: requires a valid session (receiver must be logged in)
+  - Body (application/json):
+      - senderUserId: string (required) — MongoDB ObjectId of the user who sent the request
+  - Responses:
+      - 200: { message: "Friend request accepted" }
+      - 400: { error: "invalid senderUserId" }
+      - 400: { error: "cannot accept yourself" }
+      - 404: { error: "sender not found" }
+      - 409: { error: "no pending request to accept" }
+      - 409: { error: "already friends" }
+      - 401: { error: "Not authenticated" }
+      - 500: { error: "Internal server error" }
+  - Notes:
+      - Accepting a request creates a mutual friendship.
+      - Pending request entries are removed from both users.
+
+GET /api/v1/friends/search
+  - Search for users by name or email and return relationship status.
+Auth: requires a valid session
+Query parameters:
+    - q: string (required) — search text (minimum 2 characters)
+    - limit: number (optional) — max results (default: 10, max: 20)
+Responses:
+200:
+{
+  "results": [
+    {
+      "_id": "string",
+      "name": "string",
+      "email": "string",
+      "picture": "string | null",
+      "description": "string",
+      "isFriend": false,
+      "incomingPending": false,
+      "outgoingPending": true
+    }
+  ]
+}
+
+- 400: { error: "q must be at least 2 characters" }
+- 401: { error: "Not authenticated" }
+- 500: { error: "Internal server error" }
+
+Relationship flags:
+- isFriend: user is already a friend
+- incomingPending: user has sent a friend request to you
+- outgoingPending: you have sent a friend request to the user
+
+Notes:
+- The authenticated user is excluded from search results.
+- Passwords and sensitive fields are never returned.
+- Data Model Notes (Users Collection)
+
+The following fields are used internally to support social features:
+- friends: array of user ObjectIds
+- friendRequestsIncoming: array of user ObjectIds
+- friendRequestsOutgoing: array of user ObjectIds
+
+These fields are managed exclusively by the friends API endpoints.

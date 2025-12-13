@@ -1,0 +1,183 @@
+name: Node.js CI
+
+permissions:
+  contents: read
+  packages: write
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Create backend .env from repository secrets
+        shell: bash
+        # working-directory: /
+        env:
+          PORT: ${{ secrets.PORT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_URI: ${{ secrets.ADMIN_URI }}
+          EDITOR_URI: ${{ secrets.EDITOR_URI }}
+          READER_URI: ${{ secrets.READER_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          USER_COLLECTION: ${{ secrets.USER_COLLECTION }}
+          POST_COLLECTION: ${{ secrets.POST_COLLECTION }}
+          COMMENT_COLLECTION: ${{ secrets.COMMENT_COLLECTION }}
+        run: |
+          {
+            echo "PORT=${PORT:-4000}";
+            echo "DATABASE_URL=${DATABASE_URL}";
+            echo "ADMIN_URI=${ADMIN_URI}";
+            echo "EDITOR_URI=${EDITOR_URI}";
+            echo "READER_URI=${READER_URI}";
+            echo "DB_NAME=${DB_NAME:-truefeed}";
+            echo "USER_COLLECTION=${USER_COLLECTION:-users}";
+            echo "POST_COLLECTION=${POST_COLLECTION:-posts}";
+            echo "COMMENT_COLLECTION=${COMMENT_COLLECTION:-comments}";
+            echo "FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}";
+            echo "NODE_ENV=${NODE_ENV:-development}";
+            echo "SESSION_SECRET=${SESSION_SECRET}";
+            echo "JWT_SECRET=${JWT_SECRET}";
+          } > .env
+
+      - name: Install dependencies
+        # working-directory: ./backend
+        run: npm install
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Start services with Docker Compose (for integration tests)
+        # working-directory: ./backend
+        env:
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: test
+        run: |
+          docker compose up -d --build
+
+      - name: Run tests inside Docker Compose
+        # working-directory: ./backend
+        run: |
+          # Run the configured test script inside a temporary container based on the built service
+          docker compose run --rm backend npm test
+
+      - name: Tear down compose services
+        if: always()
+        # working-directory: ./backend
+        run: docker compose down --rmi local --volumes --remove-orphans
+
+      # NOTE: Docker image build & push runs in the `docker` job below (on main only)
+
+  # Docker build and push (runs only on main when tests pass)
+  docker:
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    outputs:
+      image_name: ${{ steps.compute-tags.outputs.image_name }}
+      image_tag_latest: ${{ steps.compute-tags.outputs.image_tag_latest }}
+      image_tag_sha: ${{ steps.compute-tags.outputs.image_tag_sha }}
+      image_ref_latest: ${{ steps.compute-tags.outputs.image_ref_latest }}
+      image_ref_sha: ${{ steps.compute-tags.outputs.image_ref_sha }}
+      image_ref_digest: ${{ steps.compute-tags.outputs.image_ref_digest }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create backend .env from repository secrets
+        # working-directory: ./.env
+        shell: bash
+        env:
+          PORT: ${{ secrets.PORT }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          ADMIN_URI: ${{ secrets.ADMIN_URI }}
+          EDITOR_URI: ${{ secrets.EDITOR_URI }}
+          READER_URI: ${{ secrets.READER_URI }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          FRONTEND_ORIGIN: ${{ secrets.FRONTEND_ORIGIN }}
+          NODE_ENV: ${{ secrets.NODE_ENV }}
+          SESSION_SECRET: ${{ secrets.SESSION_SECRET }}
+          JWT_SECRET: ${{ secrets.JWT_SECRET }}
+          USER_COLLECTION: ${{ secrets.USER_COLLECTION }}
+          POST_COLLECTION: ${{ secrets.POST_COLLECTION }}
+          COMMENT_COLLECTION: ${{ secrets.COMMENT_COLLECTION }}
+        run: |
+          {
+            echo "PORT=${PORT:-4000}";
+            echo "DATABASE_URL=${DATABASE_URL}";
+            echo "ADMIN_URI=${ADMIN_URI}";
+            echo "EDITOR_URI=${EDITOR_URI}";
+            echo "READER_URI=${READER_URI}";
+            echo "DB_NAME=${DB_NAME:-truefeed}";
+            echo "USER_COLLECTION=${USER_COLLECTION:-users}";
+            echo "POST_COLLECTION=${POST_COLLECTION:-posts}";
+            echo "COMMENT_COLLECTION=${COMMENT_COLLECTION:-comments}";
+            echo "FRONTEND_ORIGIN=${FRONTEND_ORIGIN:-http://localhost:3000}";
+            echo "NODE_ENV=${NODE_ENV:-production}";
+            echo "SESSION_SECRET=${SESSION_SECRET}";
+            echo "JWT_SECRET=${JWT_SECRET}";
+          } > .env
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.TOKEN }}
+
+      - name: Build images with Docker Compose
+        # working-directory: /
+        env:
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker compose build --parallel
+
+      - name: Tag and push images
+        # working-directory: /
+        env:
+          IMAGE_NAME: ghcr.io/${{ github.repository }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker tag ${IMAGE_NAME}:${IMAGE_TAG} ${IMAGE_NAME}:latest || true
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
+          docker push ${IMAGE_NAME}:latest || true
+
+      - name: Compute image outputs
+        id: compute-tags
+        shell: bash
+        run: |
+          IMAGE_NAME="ghcr.io/${{ github.repository }}"
+          TAG_LATEST="latest"
+          TAG_SHA="${{ github.sha }}"
+          REF_LATEST="${IMAGE_NAME}:${TAG_LATEST}"
+          REF_SHA="${IMAGE_NAME}:${TAG_SHA}"
+
+          echo "image_name=$IMAGE_NAME" >> "$GITHUB_OUTPUT"
+          echo "image_tag_latest=$TAG_LATEST" >> "$GITHUB_OUTPUT"
+          echo "image_tag_sha=$TAG_SHA" >> "$GITHUB_OUTPUT"
+          echo "image_ref_latest=$REF_LATEST" >> "$GITHUB_OUTPUT"
+          echo "image_ref_sha=$REF_SHA" >> "$GITHUB_OUTPUT"
+          echo "image_ref_digest=" >> "$GITHUB_OUTPUT"

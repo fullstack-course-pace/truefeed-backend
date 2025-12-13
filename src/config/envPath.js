@@ -14,6 +14,7 @@ const NODE_ENV = process.env.NODE_ENV;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_PROJECT_NUMBER = process.env.GEMINI_PROJECT_NUMBER;
 const GEMINI_PROJECT_NAME = process.env.GEMINI_PROJECT_NAME;
+const GEMINI_MODEL_NAME = process.env.GEMINI_MODEL_NAME;
 
 module.exports = {
   PORT,
@@ -31,4 +32,5 @@ module.exports = {
   GEMINI_API_KEY,
   GEMINI_PROJECT_NUMBER,
   GEMINI_PROJECT_NAME,
+  GEMINI_MODEL_NAME,
 };

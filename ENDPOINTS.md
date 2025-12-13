@@ -8,6 +8,16 @@ Notes
 - In production, cookies are `SameSite=None; Secure`, so use HTTPS.
 - Admin-only endpoints require the session role to be `admin`.
 
+Docs & Markdown
+
+- The docs site is served at the root `/` and `/docs/*`.
+- Public Markdown fetch endpoint: `GET /md/:name` — serves whitelisted Markdown files from the backend folder with `Content-Type: text/markdown`.
+  - Allowed values for `:name`: `README.md`, `ENDPOINTS.md`, `ARCHITECTURE.md`.
+  - Responses:
+    - 200: raw markdown content
+    - 404: `{ error: "not found" }` for non-whitelisted names or missing files
+    - 500: `{ error: "failed to load markdown" }`
+
 ## Auth (public)
 
 ### POST /api/v1/auth/register
@@ -204,3 +214,37 @@ Future work
 - Payload validation and basic sanitization are in place for profile updates and post creation. For stricter contracts, migrate to a schema library (Joi/Zod) and add OpenAPI.
 - Media uploads are stored in MongoDB GridFS and streamed back via `/api/v1/files/:id`. For production at scale, consider object storage and CDNs.
 - OpenAPI/Swagger spec and Postman collection.
+
+## AI (public)
+
+These endpoints integrate with Google Gemini via the backend `geminiService`. Currently, they are public and do not require authentication. If you need to restrict access, mount them behind session auth.
+
+### GET /api/v1/gemini/generate
+
+Generate sample AI content using the configured Gemini model.
+
+- Query/body: none (current implementation ignores request payload)
+- Responses:
+  - 200: `{ response: <model_output_string_or_object> }`
+  - 500: `{ error: "Failed to generate AI content" }`
+
+Notes
+
+- Output format depends on the service implementation. Right now it returns whatever `geminiService.generate()` yields.
+
+### POST /api/v1/gemini/check
+
+Check credibility of provided text using Gemini and return an explanation with a score.
+
+- Body (application/json):
+  - `checkFor`: string — the text to evaluate
+- Behavior:
+  - The server appends an instruction asking Gemini to answer yes/no, explain why, and provide a credibility score out of 10.
+- Responses:
+  - 200: `{ response: <model_output_string_or_object> }`
+  - 500: `{ error: "Failed to check AI credibility" }`
+
+Security & configuration
+
+- Requires valid Gemini API configuration in environment for `geminiService`.
+- Consider adding rate limiting and auth if exposed publicly.

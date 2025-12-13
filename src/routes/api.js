@@ -144,6 +144,9 @@ function registerRoutes() {
   const v1Posts = require("./v1/postRoutes");
   app.use("/api/v1/posts", requireAuth, v1Posts);
 
+  // const v1AI = require("./v1/aiRoutes");
+  // app.use("/api/v1/ai", requireAuth, v1AI);
+
   // Public files streaming (GridFS) by id
   const v1Files = require("./v1/filesRoutes");
   app.use("/api/v1/files", v1Files);
@@ -153,6 +156,9 @@ function registerRoutes() {
     logger.error("Unhandled error: %o", err);
     res.status(500).json({ error: "internal server error" });
   });
+
+  const v1AI = require("./v1/aiRoutes");
+  app.use("/api/v1/gemini", v1AI);
 
   routesRegistered = true;
 }

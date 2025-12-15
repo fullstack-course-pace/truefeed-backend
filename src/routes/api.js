@@ -20,7 +20,24 @@ app.use(express.json());
 app.use(morgan("combined", { stream: logger.stream }));
 
 // CORS - allow frontend to send cookies for authentication
-app.use(cors({ origin: FRONTEND_ORIGIN, credentials: true }));
+const allowedOrigins = new Set(
+  String(FRONTEND_ORIGIN || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.size === 0 || allowedOrigins.has(origin)) {
+        return cb(null, true);
+      }
+      return cb(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+  })
+);
 // Files route will stream DB-backed uploads
 
 // If running behind a proxy/load balancer in production, trust proxy to allow secure cookies
@@ -154,6 +171,10 @@ function registerRoutes() {
     // Mount friends routes
   const v1Friends = require("./v1/friendsRoutes");
   app.use("/api/v1/friends", requireAuth, v1Friends);
+  const v1Users = require("./v1/usersRoutes");
+  app.use("/api/v1/users", requireAuth, v1Users);
+  const v1Stories = require("./v1/storyRoutes");
+  app.use("/api/v1/stories", requireAuth, v1Stories);
 
   // Express error handler to log errors
   app.use((err, req, res, next) => {

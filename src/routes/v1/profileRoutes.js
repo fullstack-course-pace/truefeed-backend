@@ -27,6 +27,7 @@ router.post(
     picture: { type: "string", required: false, maxLen: 1024, format: "url" },
     description: { type: "string", required: false, maxLen: 1000 },
     phone: { type: "string", required: false, maxLen: 30 },
+    name: { type: "string", required: false, maxLen: 100 },
   }),
   profileController.updateMe
 );
@@ -84,6 +85,8 @@ router.post(
       });
     if (typeof req.body?.phone === "string")
       updates.phone = sanitizeString(req.body.phone, { maxLen: 30 });
+    if (typeof req.body?.name === "string")
+      updates.name = sanitizeString(req.body.name, { maxLen: 100 });
 
     // Optional picture
     if (req.file) {

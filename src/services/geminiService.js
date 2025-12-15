@@ -29,26 +29,40 @@ const groundingTool = {
 
 const config = {
   tools: [groundingTool],
-  responseMineType: "application/json",
+  responseMimeType: "application/json",
   responseSchema: credibilitySchema,
 };
+
+function buildContents(text) {
+  return [
+    {
+      role: "user",
+      parts: [{ text }],
+    },
+  ];
+}
 
 async function generate() {
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL_NAME,
-    contents: "who is the president of the united states?",
+    contents: buildContents("who is the president of the united states?"),
     config,
   });
   return response.text;
 }
 
 async function checkCredibility(text) {
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL_NAME,
-    contents: text,
-    config,
-  });
-  return JSON.parse(response.text);
+  try {
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL_NAME,
+      contents: buildContents(text),
+      config,
+    });
+    const raw = response?.text || "{}";
+    return JSON.parse(raw);
+  } catch (err) {
+    throw err;
+  }
 }
 
 module.exports = { generate, checkCredibility };

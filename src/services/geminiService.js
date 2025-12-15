@@ -1,9 +1,27 @@
 const genAI = require("@google/genai");
 const { GEMINI_API_KEY, GEMINI_MODEL_NAME } = require("../config/envPath");
-// const { content } = require("@google/genai").types;
-// from google.ai.generativelanguage_v1beta.types import content
 
 const ai = new genAI.GoogleGenAI({ apiKey: GEMINI_API_KEY });
+
+const credibilitySchema = {
+  type: "OBJECT",
+  properties: {
+    credibility_score: {
+      type: "NUMBER",
+      description:
+        "Score 0-5. 5=Verified Current Fact. 4=Mostly True (minor details off). 3=Technically True but Misleading or Missing Context (e.g. correlation vs causation). 2=Outdated Fact or Historical Myth (was true, now false). 0-1=False/Debunked.",
+    },
+    fact_check_status: {
+      type: "STRING",
+      enum: ["verified", "misleading", "debunked", "unverified", "outdated"],
+    },
+    summary: {
+      type: "STRING",
+      description: "A short explanation of the facts found.",
+    },
+  },
+  required: ["credibility_score", "fact_check_status", "summary"],
+};
 
 const groundingTool = {
   googleSearch: {},
@@ -11,6 +29,8 @@ const groundingTool = {
 
 const config = {
   tools: [groundingTool],
+  responseMineType: "application/json",
+  responseSchema: credibilitySchema,
 };
 
 async function generate() {
@@ -23,30 +43,12 @@ async function generate() {
 }
 
 async function checkCredibility(text) {
-  // response_schema = {
-  //   type: "object",
-  //   properties: {
-  //     fact_check_status: {
-  //       type: "string",
-  //       enum: ["verified", "disputed", "debunked"],
-  //     },
-  //     summary: { type: "string" },
-  //     key_points: {
-  //       type: "array",
-  //       items: { type: "string" },
-  //     },
-  //     credibility_score: { type: "integer", description: "Score from 0-10" },
-  //   },
-  //   required: ["fact_check_status", "summary", "credibility_score"],
-  // };
-
   const response = await ai.models.generateContent({
     model: GEMINI_MODEL_NAME,
     contents: text,
     config,
   });
-  return response.text;
+  return JSON.parse(response.text);
 }
 
-// main();
 module.exports = { generate, checkCredibility };

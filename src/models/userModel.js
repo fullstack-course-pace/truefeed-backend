@@ -196,6 +196,36 @@ async function acceptFriendRequest(receiverId, senderId) {
   }
 }
 
+async function declineFriendRequest(receiverId, senderId) {
+  if (!ObjectId.isValid(receiverId) || !ObjectId.isValid(senderId)) {
+    return { ok: false, code: "invalid_id" };
+  }
+  if (String(receiverId) === String(senderId)) {
+    return { ok: false, code: "self_decline" };
+  }
+  const receiverObjId = new ObjectId(receiverId);
+  const senderObjId = new ObjectId(senderId);
+  const { client, db } = await connect("write");
+  try {
+    const users = db.collection("users");
+    const pending = await users.findOne(
+      { _id: receiverObjId, friendRequestsIncoming: senderObjId },
+      { projection: { _id: 1 } }
+    );
+    if (!pending) return { ok: false, code: "no_pending_request" };
+    await users.updateOne(
+      { _id: receiverObjId },
+      { $pull: { friendRequestsIncoming: senderObjId }, $set: { updatedAt: new Date() } }
+    );
+    await users.updateOne(
+      { _id: senderObjId },
+      { $pull: { friendRequestsOutgoing: receiverObjId }, $set: { updatedAt: new Date() } }
+    );
+    return { ok: true };
+  } finally {
+    await client.close();
+  }
+}
 async function searchUsers(query, { excludeUserId, limit = 10 } = {}) {
   const { client, db } = await connect("read");
   try {
@@ -240,5 +270,6 @@ module.exports = {
   updateUserById,
   sendFriendRequest,
   acceptFriendRequest,
+  declineFriendRequest,
   searchUsers,
 };

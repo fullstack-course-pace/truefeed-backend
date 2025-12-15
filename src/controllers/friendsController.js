@@ -99,6 +99,59 @@ async function searchUsers(req, res) {
   }
 }
 
+async function declineRequest(req, res) {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  const { senderUserId } = req.validatedBody || req.body || {};
+  try {
+    const result = await userModel.declineFriendRequest(req.session.userId, senderUserId);
+    if (!result.ok) {
+      if (result.code === "invalid_id") return res.status(400).json({ error: "invalid senderUserId" });
+      if (result.code === "self_decline") return res.status(400).json({ error: "cannot decline yourself" });
+      if (result.code === "no_pending_request") return res.status(409).json({ error: "no pending request to decline" });
+      return res.status(409).json({ error: "decline failed", reason: result.code });
+    }
+    return res.status(200).json({ message: "Friend request declined" });
+  } catch (err) {
+    req.logger?.error("Decline friend request error: %o", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
 
-module.exports = { sendRequest, acceptRequest, searchUsers };
+async function incomingRequests(req, res) {
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: "Not authenticated" });
+  }
+  try {
+    const me = await userModel.findById(req.session.userId, "read");
+    if (!me) return res.status(404).json({ error: "User not found" });
+    const incomingIds = (me.friendRequestsIncoming || []).map(String);
+    if (incomingIds.length === 0) return res.json({ results: [] });
+    const { connect } = require("../config/dbConnection");
+    const { ObjectId } = require("mongodb");
+    const { client, db } = await connect("read");
+    try {
+      const users = db.collection("users");
+      const docs = await users
+        .find({ _id: { $in: incomingIds.map((id) => new ObjectId(id)) } }, { projection: { password: 0 } })
+        .toArray();
+      const results = docs.map((u) => ({
+        _id: u._id,
+        name: u.name || "",
+        email: u.email,
+        picture: u.picture || null,
+        description: u.description || "",
+      }));
+      return res.json({ results });
+    } finally {
+      await client.close();
+    }
+  } catch (err) {
+    req.logger?.error("Incoming requests error: %o", err);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+module.exports = { sendRequest, acceptRequest, declineRequest, searchUsers, incomingRequests };
 

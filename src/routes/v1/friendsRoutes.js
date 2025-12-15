@@ -20,6 +20,15 @@ router.post(
   controller.acceptRequest
 );
 
+router.post(
+  "/decline",
+  validateBody({
+    senderUserId: { type: "string", required: true, maxLen: 64 },
+  }),
+  controller.declineRequest
+);
+
 router.get("/search", controller.searchUsers);
+router.get("/incoming", controller.incomingRequests);
 
 module.exports = router;

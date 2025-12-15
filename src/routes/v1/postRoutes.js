@@ -77,6 +77,33 @@ router.post(
         ? sanitizeString(req.body.content, { maxLen: 2000 })
         : "";
 
+    // Optional AI from client (stringified JSON)
+    const rawAi = req.body?.ai;
+    let aiFromClient = null;
+    try {
+      if (rawAi && typeof rawAi === "object") aiFromClient = rawAi;
+      else if (rawAi && typeof rawAi === "string") aiFromClient = JSON.parse(rawAi);
+    } catch {}
+    const map = {
+      verified: "Verified",
+      misleading: "Misleading",
+      debunked: "False",
+      outdated: "Outdated",
+      unverified: "Unverified",
+      "not applicable": "Not Applicable",
+    };
+    const aiPayload =
+      aiFromClient && typeof aiFromClient === "object"
+        ? {
+            tag: map[String(aiFromClient.fact_check_status || "").toLowerCase()] || "Unverified",
+            summary: aiFromClient.summary || "",
+            score:
+              typeof aiFromClient.credibility_score === "number"
+                ? Math.round(aiFromClient.credibility_score)
+                : null,
+          }
+        : { tag: "Pending", summary: "", score: null };
+
     let mediaUrl = "";
     let fileId = null;
 
@@ -99,17 +126,29 @@ router.post(
         fileId = file?._id || null;
         if (fileId) mediaUrl = `/api/v1/files/${fileId.toString()}`;
 
-        // Create post with mediaUrl
-        const result = (await controller.create.bind({})) // avoid binding issues if any
-          ? null
-          : null;
-        // Use model directly to avoid double response
+        // Create post with mediaUrl and AI (client-provided or pending)
         const postModel = require("../../models/postModel");
         const insert = await postModel.createPost({
           userId: req.session.userId,
           content,
           mediaUrl,
+          ai: aiPayload,
         });
+        if (!aiFromClient) {
+          const { analyzePost } = require("../../services/ai.service");
+          const logger = require("../../utils/logger");
+          req.logger?.info("AI analysis scheduled for post %s", String(insert.insertedId));
+          setImmediate(async () => {
+            try {
+              logger.info("AI analysis started for post %s", String(insert.insertedId));
+              const ai = await analyzePost(content || "", mediaUrl || "");
+              await postModel.updatePostAI(insert.insertedId, ai);
+              logger.info("AI analysis finished for post %s", String(insert.insertedId));
+            } catch (e) {
+              logger.error("AI analysis error for post %s: %o", String(insert.insertedId), e?.message || e);
+            }
+          });
+        }
 
         // Backfill file metadata with postId (optional)
         if (fileId) {
@@ -122,7 +161,7 @@ router.post(
         }
 
         await client.close();
-        return res.status(201).json({ id: insert.insertedId, mediaUrl });
+        return res.status(201).json({ id: insert.insertedId, mediaUrl, ai: { tag: aiPayload.tag } });
       } catch (e) {
         return res.status(500).json({ error: "upload or create failed" });
       }
@@ -134,13 +173,37 @@ router.post(
           userId: req.session.userId,
           content,
           mediaUrl: "",
+          ai: aiPayload,
         });
-        return res.status(201).json({ id: insert.insertedId });
+        if (!aiFromClient) {
+          const { analyzePost } = require("../../services/ai.service");
+          const logger = require("../../utils/logger");
+          req.logger?.info("AI analysis scheduled for post %s", String(insert.insertedId));
+          setImmediate(async () => {
+            try {
+              logger.info("AI analysis started for post %s", String(insert.insertedId));
+              const ai = await analyzePost(content || "", "");
+              await postModel.updatePostAI(insert.insertedId, ai);
+              logger.info("AI analysis finished for post %s", String(insert.insertedId));
+            } catch (e) {
+              logger.error("AI analysis error for post %s: %o", String(insert.insertedId), e?.message || e);
+            }
+          });
+        }
+        return res.status(201).json({ id: insert.insertedId, ai: { tag: aiPayload.tag } });
       } catch (e) {
         return res.status(500).json({ error: "create failed" });
       }
     }
   }
 );
+
+// Likes
+router.post("/:id/like", controller.like);
+router.post("/:id/unlike", controller.unlike);
+
+// Comments
+router.post("/:id/comment", controller.comment);
+router.delete("/:id/comment/:commentId", controller.deleteComment);
 
 module.exports = router;

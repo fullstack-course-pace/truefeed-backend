@@ -72,6 +72,10 @@ function initSessions(store) {
         httpOnly: true,
         secure: NODE_ENV === "production",
         sameSite: NODE_ENV === "production" ? "none" : "lax",
+        domain:
+          NODE_ENV === "production"
+            ? process.env.COOKIE_DOMAIN || undefined
+            : undefined,
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7 days
       },
     })
@@ -108,6 +112,11 @@ function registerRoutes() {
     res.sendFile(path.join(docsDir, "index.html"));
   });
   app.use("/", setDocsSecurityHeaders, express.static(docsDir));
+
+  // Health check
+  app.get("/healthz", (req, res) => {
+    res.json({ status: "ok", time: new Date().toISOString() });
+  });
 
   // Dynamic Markdown fetch endpoint (whitelisted files in backend root)
   const repoRoot = path.join(__dirname, "..", "..");

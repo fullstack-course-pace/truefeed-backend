@@ -43,6 +43,8 @@ jobs:
           USER_COLLECTION: ${{ secrets.USER_COLLECTION }}
           POST_COLLECTION: ${{ secrets.POST_COLLECTION }}
           COMMENT_COLLECTION: ${{ secrets.COMMENT_COLLECTION }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL_NAME: ${{ secrets.GEMINI_MODEL_NAME }}
         run: |
           {
             echo "PORT=${PORT:-4000}";
@@ -58,6 +60,8 @@ jobs:
             echo "NODE_ENV=${NODE_ENV:-development}";
             echo "SESSION_SECRET=${SESSION_SECRET}";
             echo "JWT_SECRET=${JWT_SECRET}";
+            echo "GEMINI_API_KEY=${GEMINI_API_KEY}";
+            echo "GEMINI_MODEL_NAME=${GEMINI_MODEL_NAME:
           } > .env
 
       - name: Install dependencies
